@@ -3,6 +3,8 @@ package com.example.myapplication;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,12 +41,14 @@ import org.tensorflow.lite.Interpreter;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -236,7 +240,15 @@ public class MainActivity extends AppCompatActivity {
         imageAnalysis.setAnalyzer(mCameraExecutor, new ImageAnalysis.Analyzer() {
             @Override
             public void analyze(@NonNull ImageProxy image) {
+                InputStream inputStream;
+                try {
+                    inputStream = MainActivity.this.getAssets().open("55df0bb9-d288-4e0d-8900-5a92af9509d1.jpg");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
                 Bitmap bitmap = image.toBitmap();
+                bitmap = BitmapFactory.decodeStream(inputStream);
                 runOnUiThread(() -> cameraProvider.unbindAll());
 
                 List<String> classLabels = loadLabels();
@@ -254,10 +266,12 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
 
                 // Preprocess the input Bitmap to match the input requirements of the model
-                ByteBuffer inputBuffer = preprocessImage(rotation);
+//                ByteBuffer inputBuffer = preprocessImage(bitmap);
+
+                float[][][][] imageArray = preprocessImage(rotation);
 
                 float[][] outputScores = new float[BATCH_SIZE][NUM_CLASSES];
-                interpreterApi.run(inputBuffer, outputScores);
+                interpreterApi.run(imageArray, outputScores);
 
                 // Post-process the output
                 Recognition topPrediction = processOutput(outputScores, loadLabels());
@@ -275,9 +289,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private ByteBuffer preprocessImage(Bitmap bitmap) {
-        float IMAGE_MEAN = 0.1f;
-        float IMAGE_STD = 1.0f;
+    private float[][][][] preprocessImage(Bitmap bitmap) {
+        float IMAGE_MEAN = 0f;
+        float IMAGE_STD = 255.0f;
         int[] inputShape = interpreterApi.getInputTensor(0).shape();
         int inputWidth = inputShape[2];
         int inputHeight = inputShape[3];
@@ -285,8 +299,8 @@ public class MainActivity extends AppCompatActivity {
         int bytesPerChannel = Float.SIZE / Byte.SIZE;
 
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true);
-        ByteBuffer inputBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * inputWidth * inputHeight * channels * bytesPerChannel);
-        inputBuffer.order(ByteOrder.nativeOrder());
+//        ByteBuffer inputBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * inputWidth * inputHeight * channels * bytesPerChannel);
+//        inputBuffer.order(ByteOrder.nativeOrder());
 
         int[] intValues = new int[inputWidth * inputHeight];
         resizedBitmap.getPixels(intValues, 0, resizedBitmap.getWidth(), 0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
@@ -295,18 +309,29 @@ public class MainActivity extends AppCompatActivity {
 //        int totalSize = BATCH_SIZE * channels * inputWidth * inputHeight * bytesPerChannel;
 //        System.out.println("Total size: " + totalSize);
 
+        float[][][][] imageArray = new float[BATCH_SIZE][3][inputWidth][inputHeight];
+        float[][][][] testing = new float[BATCH_SIZE][inputWidth][inputHeight][3];
+
         for (int i = 0; i < BATCH_SIZE; ++i) {
             for (int j = 0; j < inputWidth; ++j) {
                 for (int k = 0; k < inputHeight; ++k) {
                     int val = intValues[pixel++];
-                    inputBuffer.putFloat((((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                    inputBuffer.putFloat((((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                    inputBuffer.putFloat(((val & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+//                    inputBuffer.putFloat((((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+//                    inputBuffer.putFloat((((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+//                    inputBuffer.putFloat(((val & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+
+                    imageArray[i][0][j][k] = (((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
+                    imageArray[i][1][j][k] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
+                    imageArray[i][2][j][k] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
+
+                    testing[i][j][k][0] = (((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
+                    testing[i][j][k][1] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
+                    testing[i][j][k][2] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
                 }
             }
             pixel = 0;
         }
-        return inputBuffer;
+        return imageArray;
     }
 
     private String formatFloat(float d) {
