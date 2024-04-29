@@ -240,15 +240,15 @@ public class MainActivity extends AppCompatActivity {
         imageAnalysis.setAnalyzer(mCameraExecutor, new ImageAnalysis.Analyzer() {
             @Override
             public void analyze(@NonNull ImageProxy image) {
-                InputStream inputStream;
-                try {
-                    inputStream = MainActivity.this.getAssets().open("55df0bb9-d288-4e0d-8900-5a92af9509d1.jpg");
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+//                InputStream inputStream;
+//                try {
+//                    inputStream = MainActivity.this.getAssets().open("f9cc9d84-8c85-4020-a751-d44432a6055e.jpg");
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
 
                 Bitmap bitmap = image.toBitmap();
-                bitmap = BitmapFactory.decodeStream(inputStream);
+//                bitmap = BitmapFactory.decodeStream(inputStream);
                 runOnUiThread(() -> cameraProvider.unbindAll());
 
                 List<String> classLabels = loadLabels();
@@ -264,9 +264,6 @@ public class MainActivity extends AppCompatActivity {
                 Matrix matrix = new Matrix();
                 matrix.postRotate(90);
                 Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-
-                // Preprocess the input Bitmap to match the input requirements of the model
-//                ByteBuffer inputBuffer = preprocessImage(bitmap);
 
                 float[][][][] imageArray = preprocessImage(rotation);
 
@@ -296,37 +293,22 @@ public class MainActivity extends AppCompatActivity {
         int inputWidth = inputShape[2];
         int inputHeight = inputShape[3];
         int channels = inputShape[1];
-        int bytesPerChannel = Float.SIZE / Byte.SIZE;
 
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true);
-//        ByteBuffer inputBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * inputWidth * inputHeight * channels * bytesPerChannel);
-//        inputBuffer.order(ByteOrder.nativeOrder());
 
         int[] intValues = new int[inputWidth * inputHeight];
         resizedBitmap.getPixels(intValues, 0, resizedBitmap.getWidth(), 0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
         int pixel = 0;
 
-//        int totalSize = BATCH_SIZE * channels * inputWidth * inputHeight * bytesPerChannel;
-//        System.out.println("Total size: " + totalSize);
-
-        float[][][][] imageArray = new float[BATCH_SIZE][3][inputWidth][inputHeight];
-        float[][][][] testing = new float[BATCH_SIZE][inputWidth][inputHeight][3];
+        float[][][][] imageArray = new float[BATCH_SIZE][channels][inputWidth][inputHeight];
 
         for (int i = 0; i < BATCH_SIZE; ++i) {
             for (int j = 0; j < inputWidth; ++j) {
                 for (int k = 0; k < inputHeight; ++k) {
                     int val = intValues[pixel++];
-//                    inputBuffer.putFloat((((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-//                    inputBuffer.putFloat((((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-//                    inputBuffer.putFloat(((val & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-
                     imageArray[i][0][j][k] = (((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
                     imageArray[i][1][j][k] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
-                    imageArray[i][2][j][k] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
-
-                    testing[i][j][k][0] = (((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
-                    testing[i][j][k][1] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
-                    testing[i][j][k][2] = (((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
+                    imageArray[i][2][j][k] = ((val & 0xFF) - IMAGE_MEAN) / IMAGE_STD;
                 }
             }
             pixel = 0;
