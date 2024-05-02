@@ -12,6 +12,12 @@ cameraLifecycle = "1.4.0-alpha05"
 cameraView = "1.4.0-alpha05"
 tensorflowLite = "2.16.1"
 objectDetection = "17.0.1"
+gridlayout = "1.0.0"
+materialVersion = "1.13.0-alpha01"
+roundCornerProgressBar = "2.2.1"
+commonsMath3 = "3.6.1"
+awesomedialog = "1.0.5"
+awesomedialogVersion = "1.0.5"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -26,6 +32,10 @@ camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", versi
 camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraView" }
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
 obj-detection = { group = "com.google.mlkit", name = "object-detection", version.ref = "objectDetection" }
+gridlayout = { group = "androidx.gridlayout", name = "gridlayout", version.ref = "gridlayout" }
+google-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
+round-corner-progress-bar = { group = "com.akexorcist", name = "round-corner-progress-bar", version.ref = "roundCornerProgressBar" }
+commons-math3 = { group = "org.apache.commons", name = "commons-math3", version.ref = "commonsMath3" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

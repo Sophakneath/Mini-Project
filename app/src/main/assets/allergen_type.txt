@@ -1,0 +1,10 @@
+Milk
+Egg
+Celery
+Fish
+Grains
+Seeds
+Meat
+Seafood
+Soybean
+Wheat

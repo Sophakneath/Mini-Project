@@ -2,4 +2,15 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="primary">#FDF2F0</color>
+    <color name="button">#DC9C98</color>
+    <color name="title">#3A3A3A</color>
+    <color name="text">#676767</color>
+    <color name="safe">#33FF00</color>
+    <color name="unsafe">#FF0000</color>
+    <color name="safe50">#50C3F0AE</color>
+    <color name="unsafe50">#50F0AEAE</color>
+    <color name="notfound50">#50C1C1C1</color>
+    <color name="notfound">#A4A4A4</color>
+    <color name="chipClick">#80F0AEAE</color>
 </resources>

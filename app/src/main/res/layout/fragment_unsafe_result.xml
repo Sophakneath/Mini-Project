@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    tools:context=".UnsafeResult">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:gravity="center"
+        android:text="Cookat Srawberry Milk \n(Korean Name)"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:id="@+id/productName"/>
+
+    <FrameLayout
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:layout_marginBottom="40dp"
+        android:background="@drawable/red_trans_round_unsafe_stroke">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_gravity="center"
+            android:src="@drawable/close" />
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Unsafe to consume as it contains \nmilk and soybean"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:id="@+id/allergen" />
+
+</LinearLayout>

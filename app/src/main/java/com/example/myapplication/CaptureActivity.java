@@ -1,17 +1,20 @@
 package com.example.myapplication;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.util.Size;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -23,14 +26,17 @@ import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
-import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.FragmentContainerView;
 
 import com.example.myapplication.utils.Recognition;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.tensorflow.lite.Interpreter;
@@ -43,7 +49,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -51,24 +61,28 @@ import java.util.concurrent.Executors;
 import static com.example.myapplication.utils.Constant.REQUEST_CODE_PERMISSIONS;
 import static com.example.myapplication.utils.Constant.REQUIRED_PERMISSIONS;
 
-public class MainActivity extends AppCompatActivity {
-    ImageAnalysis imageAnalysis;
-    PreviewView mPreviewView;
+public class CaptureActivity extends AppCompatActivity {
+
+    FrameLayout home, capture, gallery;
+    ImageView back, imageResult;
     Interpreter interpreterApi;
     Executor mCameraExecutor = Executors.newSingleThreadExecutor();
-    Button startCapture, capture;
-    TextView result;
-    ImageView resultImage;
-    ConstraintLayout previewLayout, mainLayout;
     private static final String MODEL_PATH = "model_tflite.tflite";
     ProcessCameraProvider cameraProvider;
-
-    int BATCH_SIZE = 16, NUM_CLASSES;
+    ImageAnalysis imageAnalysis;
+    PreviewView mPreviewView;
+    int inputWidth, inputHeight, channels, batchSize, numClass;
+    float minThreshold = 10.0f, maxThreshold = 20.0f;
+    List<String> classLabels;
+    CoordinatorLayout bottomSheet;
+    FragmentContainerView fragmentContainerView;
+    Button scanAgain;
+    ArrayList<Integer> allergenSelected;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_capture);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -77,32 +91,57 @@ public class MainActivity extends AppCompatActivity {
 
         initInterpreter();
 
-        startCapture = findViewById(R.id.startCapture);
+        back = findViewById(R.id.back);
+        home = findViewById(R.id.home);
         capture = findViewById(R.id.capture);
-        mPreviewView = findViewById(R.id.previewView);
-        result = findViewById(R.id.result);
-        previewLayout = findViewById(R.id.preview);
-        mainLayout = findViewById(R.id.start);
-        resultImage = findViewById(R.id.resultImage);
+        gallery = findViewById(R.id.gallery);
+        mPreviewView = findViewById(R.id.previewCapture);
+        imageResult = findViewById(R.id.imageResult);
+        bottomSheet = findViewById(R.id.bottomSheet);
+        fragmentContainerView = findViewById(R.id.fragementContainer);
+        scanAgain = findViewById(R.id.scanAgain);
 
-        startCapture.setOnClickListener(new View.OnClickListener() {
+        classLabels = loadLabels();
+        numClass = classLabels.size();
+        int[] inputShape = interpreterApi.getInputTensor(0).shape();
+        inputWidth = inputShape[2];
+        inputHeight = inputShape[3];
+        channels = inputShape[1];
+        batchSize = inputShape[0];
+        allergenSelected = getIntent().getIntegerArrayListExtra("allergenSelected");
+
+        Log.d("Allergen", String.valueOf(allergenSelected.size()));
+
+        // TODO: 5/2/24 compare and get data form database
+        back.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!checkPermissions()) requestPermission();
-                else {
-                    startCamera();
-                }
+                finish();
+            }
+        });
+
+        home.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                CaptureActivity.this.startActivity(new Intent(CaptureActivity.this, HomeActivity.class));
             }
         });
 
         capture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mainLayout.setVisibility(View.VISIBLE);
-                previewLayout.setVisibility(View.GONE);
+                mPreviewView.setVisibility(View.VISIBLE);
+                imageResult.setVisibility(View.GONE);
                 captureImage();
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (!checkPermissions()) requestPermission();
+        else startCamera();
     }
 
     private boolean checkPermissions() {
@@ -127,9 +166,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void initInterpreter() {
+        // Load the TFLite model
+        AssetManager assetManager = this.getAssets();
+        try{
+            Interpreter.Options options = new Interpreter.Options();
+            options.setUseNNAPI(true);
+            // Finish interpreter initialization
+            this.interpreterApi = new Interpreter(loadModelFile(assetManager), options);
+            Log.d("TAG", "Initialized TFLite interpreter.");
+        }catch (Exception e){
+            Log.d("","xee:"+e.getMessage());
+        }
+    }
+
     private void startCamera() {
-        mainLayout.setVisibility(View.GONE);
-        previewLayout.setVisibility(View.VISIBLE);
         final ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
             try {
@@ -161,20 +212,6 @@ public class MainActivity extends AppCompatActivity {
         ///////////////////////////////////////////////////////////////////////////////////////////
     }
 
-    private void initInterpreter() {
-        // Load the TFLite model
-        AssetManager assetManager = this.getAssets();
-        try{
-            Interpreter.Options options = new Interpreter.Options();
-            options.setUseNNAPI(true);
-            // Finish interpreter initialization
-            this.interpreterApi = new Interpreter(loadModelFile(assetManager), options);
-            Log.d("TAG", "Initialized TFLite interpreter.");
-        }catch (Exception e){
-            Log.d("","xee:"+e.getMessage());
-        }
-    }
-
     private List<String> loadLabels() {
         List<String> labels = new ArrayList<>();
         try {
@@ -188,6 +225,23 @@ public class MainActivity extends AppCompatActivity {
             Log.e("TFLite", "Error reading labels", e);
         }
         return labels;
+    }
+
+    private Map<Integer, String> loadAllergenTypes() {
+        Map<Integer, String> allergenTypes = new HashMap<>();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(getAssets().open("allergen_type.txt")));
+            String line;
+            int index = 1;
+            while ((line = reader.readLine()) != null) {
+                allergenTypes.put(index, line);
+                index++;
+            }
+            reader.close();
+        } catch (IOException e) {
+            Log.e("TFLite", "Error reading allergenTypes", e);
+        }
+        return allergenTypes;
     }
 
     private Recognition processOutput(float[][] outputScores, List<String> labels) {
@@ -208,6 +262,37 @@ public class MainActivity extends AppCompatActivity {
             return null; // No class found
         }
     }
+
+    private List<Recognition> processOutputTop3(float[][] outputScores, List<String> labels) {
+        List<Recognition> top3 = new ArrayList<>();
+        float sumExpScores = 0;
+
+        // Iterate through the output scores
+        for (int i = 0; i < outputScores[0].length; i++) {
+            String label = labels.get(i);
+            float score = outputScores[0][i];
+            sumExpScores += Math.exp(score);
+
+            // Create Recognition object for each class
+            Recognition recognition = new Recognition(String.valueOf(i), label, score);
+
+            // Add to the list
+            top3.add(recognition);
+        }
+
+        // Sort the list based on scores in descending order
+        Collections.sort(top3, Comparator.comparingDouble(Recognition::getConfidence).reversed());
+        top3 = top3.subList(0, 3);
+
+        for (int i = 0; i < 3; i++) {
+            Log.d("Prediction", "Predicted Class: " + top3.get(i).getEnglishName() + ", Confidence: " + top3.get(i).getConfidence());
+            float pro = (float) (Math.exp(top3.get(i).getConfidence()) / sumExpScores) * 100;
+            top3.get(i).setConfidence(pro);
+        }
+
+        return top3;
+    }
+
 
     private ByteBuffer loadModelFile(AssetManager assetManager) throws IOException {
         FileInputStream inputStream = null;
@@ -234,19 +319,23 @@ public class MainActivity extends AppCompatActivity {
         imageAnalysis.setAnalyzer(mCameraExecutor, new ImageAnalysis.Analyzer() {
             @Override
             public void analyze(@NonNull ImageProxy image) {
-                runOnUiThread(() -> cameraProvider.unbindAll());
+                Bitmap bitmap = image.toBitmap();
+
+                Matrix matrix = new Matrix();
+                matrix.postRotate(90);
+                Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
+
+                runOnUiThread(() -> {
+                    cameraProvider.unbindAll();
+                    updateUI(rotation);
+                });
 //                InputStream inputStream;
 //                try {
 //                    inputStream = MainActivity.this.getAssets().open("f9cc9d84-8c85-4020-a751-d44432a6055e.jpg");
 //                } catch (IOException e) {
 //                    throw new RuntimeException(e);
 //                }
-
-                Bitmap bitmap = image.toBitmap();
 //                bitmap = BitmapFactory.decodeStream(inputStream);
-
-                List<String> classLabels = loadLabels();
-                NUM_CLASSES = classLabels.size();
 
                 // Run inference
                 if (interpreterApi == null) {
@@ -255,26 +344,21 @@ public class MainActivity extends AppCompatActivity {
 
                 image.close();
 
-                Matrix matrix = new Matrix();
-                matrix.postRotate(90);
-                Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-
                 float[][][][] imageArray = preprocessImage(rotation);
 
-                float[][] outputScores = new float[BATCH_SIZE][NUM_CLASSES];
+                float[][] outputScores = new float[batchSize][numClass];
                 interpreterApi.run(imageArray, outputScores);
 
                 // Post-process the output
-                Recognition topPrediction = processOutput(outputScores, loadLabels());
-                if (topPrediction != null) {
-                    String predictedClass = topPrediction.getEnglishName();
-                    float confidence = topPrediction.getConfidence();
-                    Log.d("Prediction", "Predicted Class: " + predictedClass + ", Confidence: " + confidence);
-                    runOnUiThread(() -> {
-                        updateUI(predictedClass, rotation, confidence);
-                    });
-                } else {
-                    Log.d("Prediction", "No class found");
+                List<Recognition> topPredictions = processOutputTop3(outputScores, loadLabels());
+
+                // Post-process to database for checking safe or not
+                // TODO: 5/2/24
+
+                showFragement(topPredictions);
+
+                for (int i = 0; i < 3; i++) {
+                    Log.d("Prediction", "Predicted Class: " + topPredictions.get(i).getEnglishName() + ", Confidence: " + topPredictions.get(i).getConfidence());
                 }
             }
         });
@@ -283,10 +367,6 @@ public class MainActivity extends AppCompatActivity {
     private float[][][][] preprocessImage(Bitmap bitmap) {
         float IMAGE_MEAN = 0f;
         float IMAGE_STD = 255.0f;
-        int[] inputShape = interpreterApi.getInputTensor(0).shape();
-        int inputWidth = inputShape[2];
-        int inputHeight = inputShape[3];
-        int channels = inputShape[1];
 
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true);
 
@@ -294,9 +374,9 @@ public class MainActivity extends AppCompatActivity {
         resizedBitmap.getPixels(intValues, 0, resizedBitmap.getWidth(), 0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
         int pixel = 0;
 
-        float[][][][] imageArray = new float[BATCH_SIZE][channels][inputWidth][inputHeight];
+        float[][][][] imageArray = new float[batchSize][channels][inputWidth][inputHeight];
 
-        for (int i = 0; i < BATCH_SIZE; ++i) {
+        for (int i = 0; i < batchSize; ++i) {
             for (int j = 0; j < inputWidth; ++j) {
                 for (int k = 0; k < inputHeight; ++k) {
                     int val = intValues[pixel++];
@@ -315,8 +395,41 @@ public class MainActivity extends AppCompatActivity {
         return df.format(d);
     }
 
-    private void updateUI(String predictedClass, Bitmap bitmap, float confidence) {
-        result.setText(predictedClass + ": " + confidence);
-        resultImage.setImageBitmap(bitmap);
+    private void updateUI(Bitmap bitmap) {
+        bottomSheet.setVisibility(View.VISIBLE);
+        imageResult.setImageBitmap(bitmap);
+    }
+
+    private void showFragement(List<Recognition> recognitions) {
+        float firstConfidence = recognitions.get(0).getConfidence();
+        Bundle bundle = new Bundle();
+        if (firstConfidence > maxThreshold) {
+            Recognition recognition = recognitions.get(0);
+            if (recognition.getSafe()) {
+                bundle.putParcelable("product", (Parcelable) recognition);
+                getSupportFragmentManager().beginTransaction()
+                        .setReorderingAllowed(true)
+                        .add(R.id.fragementContainer, SafeResult.class, bundle)
+                        .commit();
+            }
+            else {
+                bundle.putParcelable("product", (Parcelable) recognition);
+                getSupportFragmentManager().beginTransaction()
+                        .setReorderingAllowed(true)
+                        .add(R.id.fragementContainer, UnsafeResult.class, bundle)
+                        .commit();
+            }
+        }else if (firstConfidence > minThreshold && firstConfidence < maxThreshold ) {
+            bundle.putParcelableArrayList("products", new ArrayList<>(recognitions));
+            getSupportFragmentManager().beginTransaction()
+                    .setReorderingAllowed(true)
+                    .add(R.id.fragementContainer, PossibleResult.class, bundle)
+                    .commit();
+        }else {
+            getSupportFragmentManager().beginTransaction()
+                    .setReorderingAllowed(true)
+                    .add(R.id.fragementContainer, NotFoundResult.class, null)
+                    .commit();
+        }
     }
 }
