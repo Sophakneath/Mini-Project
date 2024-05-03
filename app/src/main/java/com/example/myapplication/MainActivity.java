@@ -1,14 +1,11 @@
 package com.example.myapplication;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.FrameLayout;
+import android.widget.ImageButton;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -19,12 +16,10 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    FrameLayout capture, home, gallery;
+    ImageButton capture, home, gallery, info;
     ChipGroup chipGroupView;
-
     ArrayList<Integer> allergenSelected = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,46 +32,29 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        capture = findViewById(R.id.capture);
-        home = findViewById(R.id.home);
-        gallery = findViewById(R.id.gallery);
+        capture = findViewById(R.id.ccapture);
+        home = findViewById(R.id.chome);
+        gallery = findViewById(R.id.cgallery);
         chipGroupView = findViewById(R.id.chipGroup);
+        info = findViewById(R.id.info);
 
-        capture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (allergenSelected == null || allergenSelected.size() == 0) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    // Add the buttons.
-                    builder.setMessage("Please tell us your allergen information!").setTitle("Crunch Guard").setIcon(R.drawable.logo);
-                    builder.setPositiveButton("Okay", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            dialog.dismiss();
-                        }
-                    });
-                    AlertDialog dialog = builder.create();
-                    dialog.show();
-                } else {
-                    Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
-                    intent.putIntegerArrayListExtra("allergenSelected", allergenSelected);
-                    MainActivity.this.startActivity(intent);
-                }
-            }
+        capture.setOnClickListener(view -> {
+            checkAllergenSelected(false);
         });
 
-        home.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finish();
-            }
+        gallery.setOnClickListener(view -> {
+            checkAllergenSelected(true);
         });
 
-        chipGroupView.setOnCheckedStateChangeListener(new ChipGroup.OnCheckedStateChangeListener() {
-            @Override
-            public void onCheckedChanged(@NonNull ChipGroup chipGroup, @NonNull List<Integer> list) {
-                allergenSelected = (ArrayList<Integer>) list;
+        home.setOnClickListener(view -> finish());
+
+        info.setOnClickListener(view -> {
+            MainActivity.this.startActivity(new Intent(MainActivity.this, InfoActivity.class));
+        });
+
+        chipGroupView.setOnCheckedStateChangeListener((chipGroup, list) -> {
+            allergenSelected = (ArrayList<Integer>) list;
 //                Toast.makeText(MainActivity2.this, "Choice" + list + " is Clicked", Toast.LENGTH_SHORT).show();
-            }
         });
 
         setChipColorStateList(R.id.choice1);
@@ -91,7 +69,24 @@ public class MainActivity extends AppCompatActivity {
         setChipColorStateList(R.id.choice10);
     }
 
-    public void setChipColorStateList(int chipId) {
+    private void checkAllergenSelected(boolean isOpenGallery) {
+        if (allergenSelected == null || allergenSelected.size() == 0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            // Add the buttons.
+            builder.setMessage("Please tell us your allergen information!").setTitle("Crunch Guard").setIcon(R.drawable.logo);
+            builder.setPositiveButton("Okay", (dialog, id) -> dialog.dismiss());
+            AlertDialog dialog = builder.create();
+            dialog.getWindow().setBackgroundDrawable(getDrawable(R.drawable.dialog_bg));
+            dialog.show();
+        } else {
+            Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
+            intent.putIntegerArrayListExtra("allergenSelected", allergenSelected);
+            intent.putExtra("gallery", isOpenGallery);
+            MainActivity.this.startActivity(intent);
+        }
+    }
+
+    private void setChipColorStateList(int chipId) {
         Chip chip = findViewById(chipId);
         int[][] states = new int[][] {
                 new int[] {-android.R.attr.state_checked}, // unchecked

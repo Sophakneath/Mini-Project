@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -13,9 +15,9 @@ import android.util.Size;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -23,7 +25,6 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -47,7 +48,9 @@ import org.tensorflow.lite.Interpreter;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -63,14 +66,16 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.example.myapplication.utils.Constant.PICK_FROM_GALLERY;
 import static com.example.myapplication.utils.Constant.REQUEST_CODE_PERMISSIONS;
 import static com.example.myapplication.utils.Constant.REQUIRED_PERMISSIONS;
+import static com.example.myapplication.utils.Constant.RESULT_LOAD_IMG;
 import static com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN;
 
 public class CaptureActivity extends AppCompatActivity {
 
-    FrameLayout home, capture, gallery;
-    ImageView back, imageResult;
+    ImageButton home, capture, gallery, back;
+    ImageView imageResult;
     Interpreter interpreterApi;
     Executor mCameraExecutor = Executors.newSingleThreadExecutor();
     private static final String MODEL_PATH = "model_tflite.tflite";
@@ -127,18 +132,14 @@ public class CaptureActivity extends AppCompatActivity {
         channels = inputShape[1];
         batchSize = inputShape[0];
         allergenSelected = getIntent().getIntegerArrayListExtra("allergenSelected");
+        boolean isOpenGallery = getIntent().getBooleanExtra("gallery", false);
 
         Log.d("Allergen", String.valueOf(allergenSelected.size()));
 
 //        FirebaseDatabase database = FirebaseDatabase.getInstance();
         myRef = FirebaseDatabase.getInstance().getReference();
 
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finish();
-            }
-        });
+        back.setOnClickListener(view -> finish());
 
         home.setOnClickListener(view -> CaptureActivity.this.startActivity(new Intent(CaptureActivity.this, HomeActivity.class)));
 
@@ -154,6 +155,8 @@ public class CaptureActivity extends AppCompatActivity {
             fragmentContainerView.removeAllViews();
             scanAgain.setVisibility(View.GONE);
             detect.setText("Detecting...");
+            imageResult.setVisibility(View.GONE);
+            mPreviewView.setVisibility(View.VISIBLE);
             startCamera();
         });
 
@@ -172,6 +175,16 @@ public class CaptureActivity extends AppCompatActivity {
         bottomSheetBehavior.setState(STATE_HIDDEN);
         bottomSheet.setBackground(getDrawable(R.drawable.rounded_dialog));
 //        bottomSheetBehavior.addBottomSheetCallback(bottomSheetCallback);
+
+        gallery.setOnClickListener(view -> {
+            if (!checkGalleryPermissions()) requestGalleryPermission();
+            else pickImage();
+        });
+
+        if (isOpenGallery) {
+            if (!checkGalleryPermissions()) requestGalleryPermission();
+            else pickImage();
+        }
     }
 
     @Override
@@ -181,7 +194,7 @@ public class CaptureActivity extends AppCompatActivity {
         else startCamera();
     }
 
-    private boolean checkPermissions() {
+    private boolean checkGalleryPermissions() {
         for(String permission: REQUIRED_PERMISSIONS){
             int permissionState = ActivityCompat.checkSelfPermission(this, permission);
             if(permissionState != PackageManager.PERMISSION_GRANTED) return false;
@@ -189,8 +202,18 @@ public class CaptureActivity extends AppCompatActivity {
         return true;
     }
 
+    private void requestGalleryPermission() {
+        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PICK_FROM_GALLERY);
+    }
+
+    private boolean checkPermissions() {
+        int permissionState = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
+        if(permissionState != PackageManager.PERMISSION_GRANTED) return false;
+        return true;
+    }
+
     private void requestPermission() {
-        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, REQUEST_CODE_PERMISSIONS);
     }
 
     @Override
@@ -200,6 +223,32 @@ public class CaptureActivity extends AppCompatActivity {
             if (grantResults.length == 0) Log.i("TAG", "User interaction was cancelled");
             else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) startCamera();
             else Log.i("TAG", "Permission Denied");
+        } else if(requestCode == PICK_FROM_GALLERY) {
+            if (grantResults.length == 0) Log.i("TAG", "User interaction was cancelled");
+            else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) pickImage();
+            else Log.i("TAG", "Permission Denied");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int reqCode, int resultCode, Intent data) {
+        super.onActivityResult(reqCode, resultCode, data);
+        if (resultCode == RESULT_OK && reqCode == RESULT_LOAD_IMG && data != null) {
+            try {
+                final Uri imageUri = data.getData();
+                final InputStream imageStream = getContentResolver().openInputStream(imageUri);
+                final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+
+                imageResult.setVisibility(View.VISIBLE);
+                mPreviewView.setVisibility(View.GONE);
+
+                runInference(selectedImage);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                Log.d("Image", "Something went wrong");
+            }
+        }else {
+            Log.d("Image", "Image not pick");
         }
     }
 
@@ -215,6 +264,12 @@ public class CaptureActivity extends AppCompatActivity {
         }catch (Exception e){
             Log.d("","xee:"+e.getMessage());
         }
+    }
+
+    private void pickImage() {
+        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+        photoPickerIntent.setType("image/*");
+        CaptureActivity.this.startActivityForResult(photoPickerIntent, RESULT_LOAD_IMG);
     }
 
     private void startCamera() {
@@ -274,25 +329,6 @@ public class CaptureActivity extends AppCompatActivity {
         return allergenTypes;
     }
 
-    private Product processOutput(float[][] outputScores, List<String> labels) {
-        int topClassIndex = -1;
-        float topScore = -Float.MAX_VALUE;
-
-        for (int i = 0; i < outputScores[0].length; i++) {
-            if (outputScores[0][i] > topScore) {
-                topScore = outputScores[0][i];
-                topClassIndex = i;
-            }
-        }
-
-        if (topClassIndex != -1) {
-            String topClassLabel = labels.get(topClassIndex);
-            return new Product(topClassIndex, topClassLabel, topScore);
-        } else {
-            return null; // No class found
-        }
-    }
-
     private List<Product> processOutputTop3(float[][] outputScores, List<String> labels) {
         List<Product> top3 = new ArrayList<>();
         float sumExpScores = 0;
@@ -346,41 +382,33 @@ public class CaptureActivity extends AppCompatActivity {
     }
 
     private void captureImage() {
-        imageAnalysis.setAnalyzer(mCameraExecutor, new ImageAnalysis.Analyzer() {
-            @Override
-            public void analyze(@NonNull ImageProxy image) {
-                Bitmap bitmap = image.toBitmap();
-
-                Matrix matrix = new Matrix();
-                matrix.postRotate(90);
-                Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
-
-                runOnUiThread(() -> {
-                    cameraProvider.unbindAll();
-                    updateUI(rotation);
-                });
-//                InputStream inputStream;
-//                try {
-//                    inputStream = MainActivity.this.getAssets().open("f9cc9d84-8c85-4020-a751-d44432a6055e.jpg");
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//                bitmap = BitmapFactory.decodeStream(inputStream);
-
-                // Run inference
-                if (interpreterApi == null) {
-                    Log.e("TFLite", "Interpreter is not initialized.");
-                }
-
-                image.close();
-
-                float[][][][] imageArray = preprocessImage(rotation);
-                float[][] outputScores = new float[batchSize][numClass];
-
-                new AsyncTask(imageArray, outputScores, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                runOnUiThread(() -> new AsyncTask(false, outputScores).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR));
-            }
+        imageAnalysis.setAnalyzer(mCameraExecutor, image -> {
+            Bitmap bitmap = image.toBitmap();
+            image.close();
+            runInference(bitmap);
         });
+    }
+
+    private void runInference(Bitmap bitmap) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(90);
+        Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+
+        runOnUiThread(() -> {
+            updateUI(rotation);
+            cameraProvider.unbindAll();
+        });
+
+        // Run inference
+        if (interpreterApi == null) {
+            Log.e("TFLite", "Interpreter is not initialized.");
+        }
+
+        float[][][][] imageArray = preprocessImage(rotation);
+        float[][] outputScores = new float[batchSize][numClass];
+
+        new AsyncTask(imageArray, outputScores, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        runOnUiThread(() -> new AsyncTask(false, outputScores).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR));
     }
 
     private class AsyncTask extends android.os.AsyncTask<Void, Integer, Void> {

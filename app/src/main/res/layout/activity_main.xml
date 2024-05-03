@@ -32,22 +32,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/textView3" />
 
-    <FrameLayout
+    <ImageButton
         android:layout_width="37dp"
         android:layout_height="37dp"
         android:layout_marginTop="36dp"
         android:layout_marginEnd="36dp"
+        android:src="@drawable/light"
         android:background="@drawable/icon_button"
+        android:scaleType="fitCenter"
+        android:padding="7dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:id="@+id/imageView2"
-            android:layout_width="23dp"
-            android:layout_height="23dp"
-            app:srcCompat="@drawable/light"
-            android:layout_gravity="center"/>
-    </FrameLayout>
+        app:layout_constraintTop_toTopOf="parent"
+        android:id="@+id/info">
+    </ImageButton>
 
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/chipGroup"
@@ -170,43 +167,35 @@
 
     </com.google.android.material.chip.ChipGroup>
 
-    <FrameLayout
-        android:id="@+id/home"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+    <ImageButton
+        android:id="@+id/chome"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
         android:layout_marginStart="50dp"
         android:layout_marginBottom="46dp"
+        android:src="@drawable/home"
         android:background="@drawable/icon_button"
+        android:scaleType="fitCenter"
+        android:padding="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
+    </ImageButton>
 
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="25dp"
-            android:layout_height="25dp"
-            android:layout_gravity="center"
-            app:srcCompat="@drawable/home" />
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/gallery"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+    <ImageButton
+        android:id="@+id/cgallery"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
         android:layout_marginEnd="50dp"
         android:layout_marginBottom="46dp"
+        android:src="@drawable/gallery"
         android:background="@drawable/icon_button"
+        android:scaleType="fitCenter"
+        android:padding="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
+    </ImageButton>
 
-        <ImageView
-            android:id="@+id/imageView6"
-            android:layout_width="25dp"
-            android:layout_height="25dp"
-            android:layout_gravity="center"
-            app:srcCompat="@drawable/gallery" />
-    </FrameLayout>
-
-    <FrameLayout
+    <ImageButton
         android:layout_width="70dp"
         android:layout_height="70dp"
         android:layout_marginBottom="40dp"
@@ -215,14 +204,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        android:id="@+id/capture">
-
-        <ImageView
-            android:id="@+id/imageView5"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="center"
-            app:srcCompat="@drawable/camera" />
-    </FrameLayout>
+        android:scaleType="fitCenter"
+        android:padding="20dp"
+        android:src="@drawable/camera"
+        android:id="@+id/ccapture">
+    </ImageButton>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
