@@ -9,7 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.example.myapplication.utils.Recognition;
+import com.example.myapplication.utils.Product;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -19,7 +19,7 @@ import com.example.myapplication.utils.Recognition;
 public class UnsafeResult extends Fragment {
 
     private static final String PRODUCT = "product";
-    private Recognition product;
+    private Product product;
     TextView productName, allergen;
     public static UnsafeResult newInstance(String param1, String param2) {
         UnsafeResult fragment = new UnsafeResult();
@@ -41,11 +41,17 @@ public class UnsafeResult extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        String allergenInfo = product.getAllergenList().get(0);
+        for (int i = 1; i < product.getAllergenList().size(); i++) {
+            allergenInfo += ", " + product.getAllergenList().get(i);
+        }
+
         View view = inflater.inflate(R.layout.fragment_unsafe_result, container, false);
         productName = view.findViewById(R.id.productName);
         allergen = view.findViewById(R.id.allergen);
         productName.setText(product.getEnglishName() + "\n" + product.getKoreanName());
-        allergen.setText("Unsafe to consume as it contains \n" + product.getAllergenInfo().toString());
+        allergen.setText("Unsafe to consume as it contains \n" + allergenInfo);
         return view;
     }
 }

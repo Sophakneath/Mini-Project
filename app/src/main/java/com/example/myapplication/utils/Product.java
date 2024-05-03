@@ -6,55 +6,59 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.database.Exclude;
+import com.google.firebase.database.IgnoreExtraProperties;
+
 import java.util.ArrayList;
 import java.util.List;
 
-// Recognition class for holding label, confidence, and id
-public class Recognition implements Parcelable {
-    private String id;
+@IgnoreExtraProperties
+public class Product implements Parcelable {
+    private int id;
     private String englishName;
     private String koreanName = "null";
     private float confidence;
-    private boolean isSafe = false;
-    private List<String> allergenInfo = new ArrayList<>();
-
-    public Recognition(String id, String englishName, String koreanName, float confidence, boolean isSafe, List<String> allergenInfo) {
+    private boolean isSafe = true;
+    @Exclude
+    private List<String> allergenList = new ArrayList<>();
+    public Product(){}
+    public Product(int id, String englishName, String koreanName, float confidence, boolean isSafe, List<String> allergenList) {
         this.id = id;
         this.englishName = englishName;
         this.koreanName = koreanName;
         this.confidence = confidence;
         this.isSafe = isSafe;
-        this.allergenInfo = allergenInfo;
+        this.allergenList = allergenList;
     }
 
-    public Recognition(String id, String englishName, float confidence) {
+    public Product(int id, String englishName, float confidence) {
         this.id = id;
         this.englishName = englishName;
         this.confidence = confidence;
     }
 
-    protected Recognition(Parcel in) {
-        id = in.readString();
+    protected Product(Parcel in) {
+        id = in.readInt();
         englishName = in.readString();
         koreanName = in.readString();
         confidence = in.readFloat();
         isSafe = in.readByte() != 0;
-        allergenInfo = in.createStringArrayList();
+        allergenList = in.createStringArrayList();
     }
 
-    public static final Creator<Recognition> CREATOR = new Creator<Recognition>() {
+    public static final Creator<Product> CREATOR = new Creator<Product>() {
         @Override
-        public Recognition createFromParcel(Parcel in) {
-            return new Recognition(in);
+        public Product createFromParcel(Parcel in) {
+            return new Product(in);
         }
 
         @Override
-        public Recognition[] newArray(int size) {
-            return new Recognition[size];
+        public Product[] newArray(int size) {
+            return new Product[size];
         }
     };
 
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -76,14 +80,23 @@ public class Recognition implements Parcelable {
 
     public void setConfidence(float confidence) { this.confidence = confidence; }
 
-    public List<String> getAllergenInfo() { return allergenInfo; }
+    public List<String> getAllergenList() { return allergenList; }
+
+    public void setAllergenList(ArrayList<String> info) {
+        this.allergenList = info;
+    }
+
+    public void setIsSafe(boolean isSafe) { this.isSafe = isSafe; }
 
     @NonNull
     @Override
     public String toString() {
         return "Recognition{" +
                 "id='" + id + '\'' +
-                ", label='" + englishName + '\'' +
+                ", englishName='" + englishName + '\'' +
+                ", koreanName='" + koreanName + '\'' +
+                ", isSafe='" + isSafe + '\'' +
+                ", allergenInfo='" + allergenList.size() + '\'' +
                 ", confidence=" + confidence +
                 '}';
     }
@@ -95,13 +108,13 @@ public class Recognition implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel parcel, int i) {
-        parcel.writeString(id);
+        parcel.writeInt(id);
         parcel.writeString(englishName);
         parcel.writeString(koreanName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             parcel.writeBoolean(isSafe);
         }
         parcel.writeFloat(confidence);
-        parcel.writeStringList(allergenInfo);
+        parcel.writeStringList(allergenList);
     }
 }

@@ -2,7 +2,6 @@ package com.example.myapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 
 import androidx.activity.EdgeToEdge;
@@ -28,11 +27,6 @@ public class HomeActivity extends AppCompatActivity {
 
         button = findViewById(R.id.start);
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                HomeActivity.this.startActivity(new Intent(HomeActivity.this, MainActivity2.class));
-            }
-        });
+        button.setOnClickListener(view -> HomeActivity.this.startActivity(new Intent(HomeActivity.this, MainActivity.class)));
     }
 }

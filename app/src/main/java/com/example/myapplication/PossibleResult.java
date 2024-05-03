@@ -9,17 +9,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.example.myapplication.utils.Recognition;
+import com.example.myapplication.utils.Product;
 
 import java.util.List;
 
 public class PossibleResult extends Fragment {
 
     private static final String PRODUCTS = "products";
-    private List<Recognition> products;
+    private List<Product> products;
     TextView pName1, pName2, pName3;
     FrameLayout pFrame1, pFrame2, pFrame3;
     ImageView pIcon1, pIcon2, pIcon3;
@@ -71,10 +70,10 @@ public class PossibleResult extends Fragment {
         return (int) (dp * scale + 0.5f);
     }
 
-    private void updateUI(TextView name, FrameLayout layout, ImageView icon, Recognition recognition) {
-        name.setText(recognition.getEnglishName() + "\n" + recognition.getKoreanName());
+    private void updateUI(TextView name, FrameLayout layout, ImageView icon, Product product) {
+        name.setText(product.getEnglishName() + "\n" + product.getKoreanName());
         FrameLayout.LayoutParams layoutParams;
-        if (recognition.getSafe()) {
+        if (product.getSafe()) {
             layout.setBackgroundResource(R.drawable.green_trans_round_safe_stroke);
             icon.setImageResource(R.drawable.check);
         }else {

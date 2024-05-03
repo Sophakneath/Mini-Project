@@ -9,12 +9,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.example.myapplication.utils.Recognition;
+import com.example.myapplication.utils.Product;
 
 public class SafeResult extends Fragment {
     private static final String PRODUCT = "product";
     private static final String KOREAN_NAME = "koreanName";
-    private Recognition product;
+    private Product product;
     TextView productName;
     public SafeResult() {
         // Required empty public constructor

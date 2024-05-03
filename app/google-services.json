@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "646868589253",
+    "project_id": "snack-classification",
+    "storage_bucket": "snack-classification.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:646868589253:android:39f4697b2d68d92cb46eac",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBe8Yb1DaAeVhhHPrTE8JoHk3HsVpcdzOU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

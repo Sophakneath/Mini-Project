@@ -5,64 +5,224 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/primary"
     tools:context=".MainActivity">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible"
-        android:id="@+id/start">
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginTop="36dp"
+        android:text="Hi, there!"
+        android:textColor="@color/title"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-            android:id="@+id/startCapture"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hello World!"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginTop="42dp"
+        android:text="Tell us your allergen information. \n You may choose more than one!"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/textView3" />
 
-        <TextView
-            android:id="@+id/result"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="20dp"
-            android:text="Result"
-            app:layout_constraintBottom_toTopOf="@+id/startCapture" />
+    <FrameLayout
+        android:layout_width="37dp"
+        android:layout_height="37dp"
+        android:layout_marginTop="36dp"
+        android:layout_marginEnd="36dp"
+        android:background="@drawable/icon_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:id="@+id/resultImage"
-            android:layout_width="128px"
-            android:layout_height="128px"
-            app:layout_constraintBottom_toTopOf="@+id/result"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.881" />
+            android:id="@+id/imageView2"
+            android:layout_width="23dp"
+            android:layout_height="23dp"
+            app:srcCompat="@drawable/light"
+            android:layout_gravity="center"/>
+    </FrameLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chipGroup"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:id="@+id/preview">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:paddingLeft="36dp"
+        android:paddingRight="36dp"
+        app:layout_constraintTop_toBottomOf="@+id/textView4"
+        tools:layout_editor_absoluteX="0dp">
 
-        <androidx.camera.view.PreviewView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/previewView" />
-
-        <Button
-            android:id="@+id/capture"
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice1"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hello World!"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginBottom="20dp"/>
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            android:layout_height="60dp"
+            android:text=" Milk 🥛 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice2"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Egg 🥚 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice3"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Celery 🥬 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice4"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Fish 🐟 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice5"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Grains 🌾 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice6"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Seeds 🥜 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice7"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Meat 🥩 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice8"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Seafood 🦞 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice9"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Soybean 🫘 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/choice10"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text=" Wheat 🍞 "
+            android:textSize="16dp"
+            app:chipCornerRadius="10dp"
+            app:chipStrokeWidth="0dp"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <FrameLayout
+        android:id="@+id/home"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="50dp"
+        android:layout_marginBottom="46dp"
+        android:background="@drawable/icon_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/imageView3"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_gravity="center"
+            app:srcCompat="@drawable/home" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/gallery"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="46dp"
+        android:background="@drawable/icon_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/imageView6"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_gravity="center"
+            app:srcCompat="@drawable/gallery" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_marginBottom="40dp"
+        android:background="@drawable/pink_round_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        android:id="@+id/capture">
+
+        <ImageView
+            android:id="@+id/imageView5"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            app:srcCompat="@drawable/camera" />
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

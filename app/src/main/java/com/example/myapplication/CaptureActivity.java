@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -34,10 +35,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.FragmentContainerView;
 
-import com.example.myapplication.utils.Recognition;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
+import com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar;
+import com.example.myapplication.utils.Product;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -56,10 +60,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.example.myapplication.utils.Constant.REQUEST_CODE_PERMISSIONS;
 import static com.example.myapplication.utils.Constant.REQUIRED_PERMISSIONS;
+import static com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN;
 
 public class CaptureActivity extends AppCompatActivity {
 
@@ -74,10 +80,18 @@ public class CaptureActivity extends AppCompatActivity {
     int inputWidth, inputHeight, channels, batchSize, numClass;
     float minThreshold = 10.0f, maxThreshold = 20.0f;
     List<String> classLabels;
-    CoordinatorLayout bottomSheet;
+    CoordinatorLayout bottomSheetContainer;
+    FrameLayout bottomSheet;
     FragmentContainerView fragmentContainerView;
     Button scanAgain;
     ArrayList<Integer> allergenSelected;
+    DatabaseReference myRef;
+    RoundCornerProgressBar progressBar;
+    ExecutorService executorService;
+    boolean isCompleted = false;
+    TextView detect;
+
+    BottomSheetBehavior bottomSheetBehavior;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +104,7 @@ public class CaptureActivity extends AppCompatActivity {
         });
 
         initInterpreter();
+        executorService = Executors.newFixedThreadPool(2);
 
         back = findViewById(R.id.back);
         home = findViewById(R.id.home);
@@ -97,9 +112,12 @@ public class CaptureActivity extends AppCompatActivity {
         gallery = findViewById(R.id.gallery);
         mPreviewView = findViewById(R.id.previewCapture);
         imageResult = findViewById(R.id.imageResult);
-        bottomSheet = findViewById(R.id.bottomSheet);
+        bottomSheetContainer = findViewById(R.id.bottomSheet);
         fragmentContainerView = findViewById(R.id.fragementContainer);
         scanAgain = findViewById(R.id.scanAgain);
+        progressBar = findViewById(R.id.progressBar);
+        detect = findViewById(R.id.detect);
+        bottomSheet = findViewById(R.id.standard_bottom_sheet);
 
         classLabels = loadLabels();
         numClass = classLabels.size();
@@ -112,7 +130,9 @@ public class CaptureActivity extends AppCompatActivity {
 
         Log.d("Allergen", String.valueOf(allergenSelected.size()));
 
-        // TODO: 5/2/24 compare and get data form database
+//        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        myRef = FirebaseDatabase.getInstance().getReference();
+
         back.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -120,21 +140,38 @@ public class CaptureActivity extends AppCompatActivity {
             }
         });
 
-        home.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                CaptureActivity.this.startActivity(new Intent(CaptureActivity.this, HomeActivity.class));
-            }
+        home.setOnClickListener(view -> CaptureActivity.this.startActivity(new Intent(CaptureActivity.this, HomeActivity.class)));
+
+        capture.setOnClickListener(view -> {
+            mPreviewView.setVisibility(View.VISIBLE);
+            imageResult.setVisibility(View.GONE);
+            captureImage();
         });
 
-        capture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mPreviewView.setVisibility(View.VISIBLE);
-                imageResult.setVisibility(View.GONE);
-                captureImage();
-            }
+        scanAgain.setOnClickListener(view -> {
+            bottomSheetContainer.setVisibility(View.GONE);
+            bottomSheetBehavior.setState(STATE_HIDDEN);
+            fragmentContainerView.removeAllViews();
+            scanAgain.setVisibility(View.GONE);
+            detect.setText("Detecting...");
+            startCamera();
         });
+
+//        BottomSheetBehavior.BottomSheetCallback bottomSheetCallback = new BottomSheetBehavior.BottomSheetCallback() {
+//            @Override
+//            public void onStateChanged(@NonNull View view, int i) {
+//            }
+//
+//            @Override
+//            public void onSlide(@NonNull View view, float v) {
+//
+//            }
+//        };
+
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        bottomSheetBehavior.setState(STATE_HIDDEN);
+        bottomSheet.setBackground(getDrawable(R.drawable.rounded_dialog));
+//        bottomSheetBehavior.addBottomSheetCallback(bottomSheetCallback);
     }
 
     @Override
@@ -197,19 +234,12 @@ public class CaptureActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.R)
     void bindUseCases() {
         CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build();
-
-        ///////////////////////////////////// Preview Use Case ////////////////////////////////////
-        //build preview to use case
         Preview preview = new Preview.Builder().build();
-
         preview.setSurfaceProvider(mPreviewView.getSurfaceProvider());
 
         cameraProvider.unbindAll();
-
         imageAnalysis = new ImageAnalysis.Builder().setTargetResolution(new Size(128, 128)).setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build();
         cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
     }
 
     private List<String> loadLabels() {
@@ -244,7 +274,7 @@ public class CaptureActivity extends AppCompatActivity {
         return allergenTypes;
     }
 
-    private Recognition processOutput(float[][] outputScores, List<String> labels) {
+    private Product processOutput(float[][] outputScores, List<String> labels) {
         int topClassIndex = -1;
         float topScore = -Float.MAX_VALUE;
 
@@ -257,14 +287,14 @@ public class CaptureActivity extends AppCompatActivity {
 
         if (topClassIndex != -1) {
             String topClassLabel = labels.get(topClassIndex);
-            return new Recognition(String.valueOf(topClassIndex), topClassLabel, topScore);
+            return new Product(topClassIndex, topClassLabel, topScore);
         } else {
             return null; // No class found
         }
     }
 
-    private List<Recognition> processOutputTop3(float[][] outputScores, List<String> labels) {
-        List<Recognition> top3 = new ArrayList<>();
+    private List<Product> processOutputTop3(float[][] outputScores, List<String> labels) {
+        List<Product> top3 = new ArrayList<>();
         float sumExpScores = 0;
 
         // Iterate through the output scores
@@ -274,14 +304,14 @@ public class CaptureActivity extends AppCompatActivity {
             sumExpScores += Math.exp(score);
 
             // Create Recognition object for each class
-            Recognition recognition = new Recognition(String.valueOf(i), label, score);
+            Product product = new Product(i, label, score);
 
             // Add to the list
-            top3.add(recognition);
+            top3.add(product);
         }
 
         // Sort the list based on scores in descending order
-        Collections.sort(top3, Comparator.comparingDouble(Recognition::getConfidence).reversed());
+        Collections.sort(top3, Comparator.comparingDouble(Product::getConfidence).reversed());
         top3 = top3.subList(0, 3);
 
         for (int i = 0; i < 3; i++) {
@@ -345,23 +375,80 @@ public class CaptureActivity extends AppCompatActivity {
                 image.close();
 
                 float[][][][] imageArray = preprocessImage(rotation);
-
                 float[][] outputScores = new float[batchSize][numClass];
-                interpreterApi.run(imageArray, outputScores);
 
+                new AsyncTask(imageArray, outputScores, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                runOnUiThread(() -> new AsyncTask(false, outputScores).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR));
+            }
+        });
+    }
+
+    private class AsyncTask extends android.os.AsyncTask<Void, Integer, Void> {
+        float[][][][] imageArray;
+        float[][] outputScores;
+        Boolean inferenceTask;
+
+        public AsyncTask(float[][][][] imageArray, float[][] outputScores, boolean inferenceTask) {
+            this.imageArray = imageArray;
+            this.outputScores = outputScores;
+            this.inferenceTask = inferenceTask;
+        }
+
+        public AsyncTask(boolean inferenceTask, float[][] outputScores) {
+            this.inferenceTask = inferenceTask;
+            this.outputScores = outputScores;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            // Initialize progress bar
+            if (!inferenceTask) {
+                progressBar.setMax(100);
+                progressBar.setProgress(0);
+            }
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            if (inferenceTask) interpreterApi.run(imageArray, outputScores);
+            else {
+                // Simulate inference progress
+                for (int progress = 0; progress <= 100; progress += 10) {
+                    // Update progress
+                    publishProgress(progress);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            // Update progress bar on UI thread
+            progressBar.setProgress(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if (inferenceTask) isCompleted = true;
+            if((inferenceTask && progressBar.getProgress() == 100) || (isCompleted == true && progressBar.getProgress() == 100)) {
+                // Inference completed
                 // Post-process the output
-                List<Recognition> topPredictions = processOutputTop3(outputScores, loadLabels());
+                List<Product> topPredictions = processOutputTop3(outputScores, loadLabels());
 
                 // Post-process to database for checking safe or not
-                // TODO: 5/2/24
-
-                showFragement(topPredictions);
+                verifyDataWithDatabase(topPredictions);
 
                 for (int i = 0; i < 3; i++) {
                     Log.d("Prediction", "Predicted Class: " + topPredictions.get(i).getEnglishName() + ", Confidence: " + topPredictions.get(i).getConfidence());
                 }
+                isCompleted = false;
             }
-        });
+        }
     }
 
     private float[][][][] preprocessImage(Bitmap bitmap) {
@@ -396,40 +483,85 @@ public class CaptureActivity extends AppCompatActivity {
     }
 
     private void updateUI(Bitmap bitmap) {
-        bottomSheet.setVisibility(View.VISIBLE);
+        bottomSheetContainer.setVisibility(View.VISIBLE);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         imageResult.setImageBitmap(bitmap);
     }
 
-    private void showFragement(List<Recognition> recognitions) {
-        float firstConfidence = recognitions.get(0).getConfidence();
+    private void verifyDataWithDatabase(List<Product> products) {
+        Product product = products.get(0);
         Bundle bundle = new Bundle();
-        if (firstConfidence > maxThreshold) {
-            Recognition recognition = recognitions.get(0);
-            if (recognition.getSafe()) {
-                bundle.putParcelable("product", (Parcelable) recognition);
-                getSupportFragmentManager().beginTransaction()
-                        .setReorderingAllowed(true)
-                        .add(R.id.fragementContainer, SafeResult.class, bundle)
-                        .commit();
+        ArrayList<String> allergenInfo = new ArrayList<>();
+
+        if (product.getConfidence() > maxThreshold) {
+            myRef.child(product.getEnglishName()).get().addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    Log.e("firebase", "Error getting data", task.getException());
+                }
+                else {
+                    Product productResult = task.getResult().getValue(Product.class);
+                    for (DataSnapshot snapshot: task.getResult().child("allergenInfo").getChildren()) {
+                        Log.d("firebase", snapshot.toString());
+                        allergenInfo.add(snapshot.getValue().toString());
+                        if (allergenSelected.contains(Integer.parseInt(snapshot.getKey()))) productResult.setIsSafe(false);
+                    }
+                    productResult.setAllergenList(allergenInfo);
+                    productResult.setConfidence(product.getConfidence());
+                    Log.d("firebase", productResult.toString());
+
+                    if (productResult.getSafe()) {
+                        bundle.putParcelable("product", (Parcelable) productResult);
+                        getSupportFragmentManager().beginTransaction()
+                                .setReorderingAllowed(true)
+                                .add(R.id.fragementContainer, SafeResult.class, bundle)
+                                .commit();
+                    }
+                    else {
+                        bundle.putParcelable("product", (Parcelable) productResult);
+                        getSupportFragmentManager().beginTransaction()
+                                .setReorderingAllowed(true)
+                                .add(R.id.fragementContainer, UnsafeResult.class, bundle)
+                                .commit();
+                    }
+                }
+            });
+        }else if (product.getConfidence() > minThreshold && product.getConfidence() < maxThreshold ) {
+            ArrayList<Product> results = new ArrayList<>();
+            for (Product p: products) {
+                myRef.child(p.getEnglishName()).get().addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("firebase", "Error getting data", task.getException());
+                    }
+                    else {
+                        Product productResult = task.getResult().getValue(Product.class);
+                        for (DataSnapshot snapshot: task.getResult().child("allergenInfo").getChildren()) {
+                            Log.d("firebase", snapshot.toString());
+                            allergenInfo.add(snapshot.getValue().toString());
+                            if (allergenSelected.contains(Integer.parseInt(snapshot.getKey()))) productResult.setIsSafe(false);
+                        }
+                        productResult.setAllergenList(allergenInfo);
+                        productResult.setConfidence(p.getConfidence());
+                        Log.d("firebase", productResult.toString());
+                        results.add(productResult);
+
+                        bundle.putParcelableArrayList("products", results);
+                        getSupportFragmentManager().beginTransaction()
+                                .setReorderingAllowed(true)
+                                .add(R.id.fragementContainer, PossibleResult.class, bundle)
+                                .commit();
+                    }
+                });
             }
-            else {
-                bundle.putParcelable("product", (Parcelable) recognition);
-                getSupportFragmentManager().beginTransaction()
-                        .setReorderingAllowed(true)
-                        .add(R.id.fragementContainer, UnsafeResult.class, bundle)
-                        .commit();
-            }
-        }else if (firstConfidence > minThreshold && firstConfidence < maxThreshold ) {
-            bundle.putParcelableArrayList("products", new ArrayList<>(recognitions));
-            getSupportFragmentManager().beginTransaction()
-                    .setReorderingAllowed(true)
-                    .add(R.id.fragementContainer, PossibleResult.class, bundle)
-                    .commit();
         }else {
             getSupportFragmentManager().beginTransaction()
                     .setReorderingAllowed(true)
                     .add(R.id.fragementContainer, NotFoundResult.class, null)
                     .commit();
         }
+
+        runOnUiThread(() -> {
+            detect.setText("Completed");
+            scanAgain.setVisibility(View.VISIBLE);
+        });
     }
 }

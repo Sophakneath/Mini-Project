@@ -89,16 +89,16 @@
     </FrameLayout>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/bottomSheet"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:id="@+id/bottomSheet"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <FrameLayout
-            android:id="@+id/standard_bottom_sheet_possible"
+            android:id="@+id/standard_bottom_sheet"
             style="?attr/bottomSheetStyle"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -117,39 +117,24 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="30dp"
-                    android:layout_marginRight="30dp"
                     android:layout_marginTop="30dp"
+                    android:layout_marginRight="30dp"
                     android:padding="16dp"
                     android:text="Scan Again!"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/fragementContainer" />
 
                 <TextView
-                    android:id="@+id/textView8"
+                    android:id="@+id/detect"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="Detected"
+                    android:text="Detecting"
                     android:textSize="16sp"
                     app:layout_constraintTop_toTopOf="parent"
-                    tools:layout_editor_absoluteX="30dp" />
-
-                <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar
-                    android:id="@+id/roundCornerProgressBarPossible"
-                    android:layout_width="match_parent"
-                    android:layout_height="30dp"
-                    android:layout_marginTop="12dp"
-                    app:layout_constraintTop_toBottomOf="@+id/textView8"
-                    app:rcAnimationEnable="true"
-                    app:rcAnimationSpeedScale="1"
-                    app:rcBackgroundColor="#0A000000"
-                    app:rcBackgroundPadding="4dp"
-                    app:rcMax="100"
-                    app:rcProgress="100"
-                    app:rcProgressColors="@array/sample_progress_gradient"
-                    app:rcRadius="30dp"
                     tools:layout_editor_absoluteX="30dp" />
 
                 <androidx.fragment.app.FragmentContainerView
@@ -161,7 +146,23 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/roundCornerProgressBarPossible" />
+                    app:layout_constraintTop_toBottomOf="@+id/progressBar" />
+
+                <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:layout_marginTop="12dp"
+                    app:layout_constraintTop_toBottomOf="@+id/detect"
+                    app:rcAnimationEnable="true"
+                    app:rcAnimationSpeedScale="1"
+                    app:rcBackgroundColor="#0A000000"
+                    app:rcBackgroundPadding="4dp"
+                    app:rcMax="100"
+                    app:rcProgress="0"
+                    app:rcProgressColors="@array/sample_progress_gradient"
+                    app:rcRadius="30dp"
+                    tools:layout_editor_absoluteX="30dp" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

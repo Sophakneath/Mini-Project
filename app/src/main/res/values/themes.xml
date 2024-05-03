@@ -7,31 +7,4 @@
 
     <style name="Theme.MyApplication" parent="Base.Theme.MyApplication" />
 
-    <style name="ModalBottomSheet" parent="Widget.Material3.BottomSheet.Modal">
-        <item name="cornerRadius">20dp</item>
-    </style>
-
-    <style name="ModalBottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
-        <item name="bottomSheetStyle">@style/ModalBottomSheet</item>
-    </style>
-
-    <style name="AppTheme" parent="Theme.Material3.Dark.BottomSheetDialog">
-        <item name="bottomSheetDialogTheme">@style/ModalBottomSheetDialog</item>
-    </style>
-
-<!--    <style name="Widget.MaterialComponents.Chip.Choice" parent="Base.Widget.MaterialComponents.Chip">-->
-<!--        <item name="android:checkable">true</item>-->
-
-<!--        <item name="chipIconVisible">false</item>-->
-<!--        <item name="checkedIconVisible">false</item>-->
-<!--        <item name="closeIconVisible">false</item>-->
-
-<!--        <item name="checkedIcon">@drawable/ic_mtrl_chip_checked_black</item>-->
-
-<!--        <item name="android:textColor">@color/text</item>-->
-
-<!--        <item name="chipBackgroundColor">@color/white</item>-->
-<!--        <item name="rippleColor">@color/mtrl_choice_chip_ripple_color</item>-->
-
-<!--    </style>-->
 </resources>
