@@ -43,9 +43,10 @@ public class UnsafeResult extends Fragment {
                              Bundle savedInstanceState) {
 
         String allergenInfo = product.getAllergenList().get(0);
-        for (int i = 1; i < product.getAllergenList().size(); i++) {
+        for (int i = 1; i < product.getAllergenList().size() - 1; i++) {
             allergenInfo += ", " + product.getAllergenList().get(i);
         }
+        allergenInfo += ", and " + product.getAllergenList().get(product.getAllergenList().size() - 1);
 
         View view = inflater.inflate(R.layout.fragment_unsafe_result, container, false);
         productName = view.findViewById(R.id.productName);
