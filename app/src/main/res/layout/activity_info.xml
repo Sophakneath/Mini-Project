@@ -54,7 +54,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="25dp">
 
                 <!-- Title -->
                 <TextView
@@ -69,10 +69,19 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Your app description goes here."
+                    android:text="Welcome to our app designed to make your food choices safer and more informed! Use our machine learning technology to detect and classify Korean packaged food products, ensuring you have access to crucial allergen information tailored to your needs."
                     android:textSize="16sp"
                     android:textColor="@color/text"
                     android:layout_marginTop="8dp"/>
+
+                <!-- Download -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Download our app today and make safer food choices!"
+                    android:textSize="16sp"
+                    android:textColor="@color/text"
+                    android:layout_marginTop="16dp"/>
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

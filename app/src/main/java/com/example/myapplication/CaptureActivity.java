@@ -56,6 +56,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -78,12 +79,12 @@ public class CaptureActivity extends AppCompatActivity {
     ImageView imageResult;
     Interpreter interpreterApi;
     Executor mCameraExecutor = Executors.newSingleThreadExecutor();
-    private static final String MODEL_PATH = "model_tflite.tflite";
+    private static final String MODEL_PATH = "model_channel_pruning.tflite";
     ProcessCameraProvider cameraProvider;
     ImageAnalysis imageAnalysis;
     PreviewView mPreviewView;
     int inputWidth, inputHeight, channels, batchSize, numClass;
-    float minThreshold = 10.0f, maxThreshold = 20.0f;
+    float minThreshold = 70.0f, maxThreshold = 90.0f;
     List<String> classLabels;
     CoordinatorLayout bottomSheetContainer;
     FrameLayout bottomSheet;
@@ -160,21 +161,9 @@ public class CaptureActivity extends AppCompatActivity {
             startCamera();
         });
 
-//        BottomSheetBehavior.BottomSheetCallback bottomSheetCallback = new BottomSheetBehavior.BottomSheetCallback() {
-//            @Override
-//            public void onStateChanged(@NonNull View view, int i) {
-//            }
-//
-//            @Override
-//            public void onSlide(@NonNull View view, float v) {
-//
-//            }
-//        };
-
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
         bottomSheetBehavior.setState(STATE_HIDDEN);
         bottomSheet.setBackground(getDrawable(R.drawable.rounded_dialog));
-//        bottomSheetBehavior.addBottomSheetCallback(bottomSheetCallback);
 
         gallery.setOnClickListener(view -> {
             if (!checkGalleryPermissions()) requestGalleryPermission();
@@ -390,6 +379,12 @@ public class CaptureActivity extends AppCompatActivity {
     }
 
     private void runInference(Bitmap bitmap) {
+//        DisplayMetrics displayMetrics = new DisplayMetrics();
+//        CaptureActivity.this.getWindowManager()
+//                .getDefaultDisplay()
+//                .getMetrics(displayMetrics);
+//        int height = displayMetrics.heightPixels;
+//        int width = displayMetrics.widthPixels;
         Matrix matrix = new Matrix();
         matrix.postRotate(90);
         Bitmap rotation = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
@@ -438,14 +433,17 @@ public class CaptureActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            if (inferenceTask) interpreterApi.run(imageArray, outputScores);
+            if (inferenceTask) {
+                interpreterApi.run(imageArray, outputScores);
+                Log.d("Inference result", Arrays.toString(outputScores));
+            }
             else {
                 // Simulate inference progress
                 for (int progress = 0; progress <= 100; progress += 10) {
                     // Update progress
                     publishProgress(progress);
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(300);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -555,8 +553,8 @@ public class CaptureActivity extends AppCompatActivity {
             });
         }else if (product.getConfidence() > minThreshold && product.getConfidence() < maxThreshold ) {
             ArrayList<Product> results = new ArrayList<>();
-            for (Product p: products) {
-                myRef.child(p.getEnglishName()).get().addOnCompleteListener(task -> {
+//            for (Product p: products) {
+                myRef.child(products.get(0).getEnglishName()).get().addOnCompleteListener(task -> {
                     if (!task.isSuccessful()) {
                         Log.e("firebase", "Error getting data", task.getException());
                     }
@@ -568,18 +566,55 @@ public class CaptureActivity extends AppCompatActivity {
                             if (allergenSelected.contains(Integer.parseInt(snapshot.getKey()))) productResult.setIsSafe(false);
                         }
                         productResult.setAllergenList(allergenInfo);
-                        productResult.setConfidence(p.getConfidence());
+                        productResult.setConfidence(products.get(0).getConfidence());
                         Log.d("firebase", productResult.toString());
                         results.add(productResult);
 
-                        bundle.putParcelableArrayList("products", results);
-                        getSupportFragmentManager().beginTransaction()
-                                .setReorderingAllowed(true)
-                                .add(R.id.fragementContainer, PossibleResult.class, bundle)
-                                .commit();
                     }
                 });
-            }
+
+            myRef.child(products.get(1).getEnglishName()).get().addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    Log.e("firebase", "Error getting data", task.getException());
+                }
+                else {
+                    Product productResult = task.getResult().getValue(Product.class);
+                    for (DataSnapshot snapshot: task.getResult().child("allergenInfo").getChildren()) {
+                        Log.d("firebase", snapshot.toString());
+                        allergenInfo.add(snapshot.getValue().toString());
+                        if (allergenSelected.contains(Integer.parseInt(snapshot.getKey()))) productResult.setIsSafe(false);
+                    }
+                    productResult.setAllergenList(allergenInfo);
+                    productResult.setConfidence(products.get(1).getConfidence());
+                    Log.d("firebase", productResult.toString());
+                    results.add(productResult);
+
+                }
+            });
+
+            myRef.child(products.get(2).getEnglishName()).get().addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    Log.e("firebase", "Error getting data", task.getException());
+                }
+                else {
+                    Product productResult = task.getResult().getValue(Product.class);
+                    for (DataSnapshot snapshot: task.getResult().child("allergenInfo").getChildren()) {
+                        Log.d("firebase", snapshot.toString());
+                        allergenInfo.add(snapshot.getValue().toString());
+                        if (allergenSelected.contains(Integer.parseInt(snapshot.getKey()))) productResult.setIsSafe(false);
+                    }
+                    productResult.setAllergenList(allergenInfo);
+                    productResult.setConfidence(products.get(2).getConfidence());
+                    Log.d("firebase", productResult.toString());
+                    results.add(productResult);
+                    bundle.putParcelableArrayList("products", results);
+                    getSupportFragmentManager().beginTransaction()
+                            .setReorderingAllowed(true)
+                            .add(R.id.fragementContainer, PossibleResult.class, bundle)
+                            .commit();
+                }
+            });
+//            }
         }else {
             getSupportFragmentManager().beginTransaction()
                     .setReorderingAllowed(true)
