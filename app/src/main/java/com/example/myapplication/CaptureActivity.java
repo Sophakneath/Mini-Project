@@ -84,7 +84,7 @@ public class CaptureActivity extends AppCompatActivity {
     ImageAnalysis imageAnalysis;
     PreviewView mPreviewView;
     int inputWidth, inputHeight, channels, batchSize, numClass;
-    float minThreshold = 96.0f, maxThreshold = 97.0f;
+    float minThreshold = 70.0f, maxThreshold = 90.0f;
     List<String> classLabels;
     CoordinatorLayout bottomSheetContainer;
     FrameLayout bottomSheet;
