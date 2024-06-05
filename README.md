@@ -51,6 +51,7 @@ The `colab` folder contains essential files for model training and data collecti
 
 - **Model Training Notebook**: A Jupyter notebook to train the machine learning model.
 - **Coupang Scrapper Notebook**: A notebook to scrape datasets from Coupang for training purposes.
+- **Dataset**: https://drive.google.com/file/d/14NJrFBxM7iB5iQxL6D1KTLJCwrFdHTgk/view?usp=sharing
 
 ## Usage
 
