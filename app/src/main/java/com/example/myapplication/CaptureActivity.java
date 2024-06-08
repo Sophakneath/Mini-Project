@@ -342,6 +342,7 @@ public class CaptureActivity extends AppCompatActivity {
         for (int i = 0; i < 3; i++) {
             Log.d("Prediction", "Predicted Class: " + top3.get(i).getEnglishName() + ", Confidence: " + top3.get(i).getConfidence());
             float pro = (float) (Math.exp(top3.get(i).getConfidence()) / sumExpScores) * 100;
+            Log.d("Prediction", "Predicted Class: " + top3.get(i).getEnglishName() + ", Pro: " + pro);
             top3.get(i).setConfidence(pro);
         }
 

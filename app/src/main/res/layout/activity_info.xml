@@ -32,7 +32,7 @@
             android:id="@+id/image_logo"
             android:layout_width="match_parent"
             android:layout_height="207dp"
-            android:src="@drawable/img"
+            android:src="@drawable/logo"
             android:scaleType="fitCenter"
             android:adjustViewBounds="true"
             android:layout_below="@id/button_back"
